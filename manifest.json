@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Zoom Meet Recorder",
+  "version": "1.0.0",
+  "description": "Automatically record Zoom Meet sessions with transcription",
+  
+  "permissions": [
+    "tabCapture",
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  
+  "host_permissions": [
+    "https://app.zoom.us/*"
+  ],
+  
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["https://app.zoom.us/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
