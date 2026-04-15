@@ -152,7 +152,7 @@
                 console.error("Recorder error:", err);
             };
 
-            mediaRecorder.onstop = () => {
+            mediaRecorder.onstop = async() => {
                 console.log("=== RECORDING STOPPED ===");
 
                 const blob = new Blob(chunks, { type: mimeType });
@@ -165,6 +165,13 @@
 
                 URL.revokeObjectURL(url);
                 cleanup();
+
+
+                try {
+                    await chrome.runtime.sendMessage({ type: "STOP_TABCAPTURE" });
+                } catch (e) {
+                    console.warn("[controller] STOP_TABCAPTURE failed:", e);
+                }
             };
 
             mediaRecorder.start();
@@ -174,7 +181,7 @@
         }
     }
 
-    function stopRecording() {
+    async function stopRecording() {
         console.log("=== STOP REQUESTED ===");
 
         if (!mediaRecorder) {
@@ -182,6 +189,11 @@
             return;
         }
 
+        try {
+            await chrome.runtime.sendMessage({ type: "STOP_TABCAPTURE" });
+        } catch (e) {
+            console.warn("[controller] STOP_TABCAPTURE failed:", e);
+        }
         if (mediaRecorder.state !== "inactive") {
             mediaRecorder.stop();
         }
@@ -206,5 +218,21 @@
 
         console.log("Cleanup complete");
     }
-
+    chrome.runtime?.onMessage?.addListener((message, sender, sendResponse) => {
+        try {
+            if (message.type === "OFFSCREEN_RECORDING_STARTED") {
+                this.handleOffscreenRecordingStarted();
+                sendResponse?.({ success: true });
+                return;
+            }
+            if (message.type === "OFFSCREEN_RECORDING_STOPPED") {
+                this.handleOffscreenRecordingStopped();
+                sendResponse?.({ success: true });
+                return;
+            }
+        } catch (e) {
+            console.warn("[msg] handler error:", e);
+        }
+        return true;
+    });
 })();
